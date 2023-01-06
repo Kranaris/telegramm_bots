@@ -2,7 +2,6 @@ import uuid
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineQueryResultArticle, InputTextMessageContent
-import hashlib
 from config import API_TOKEN
 
 bot = Bot(API_TOKEN)

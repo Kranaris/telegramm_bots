@@ -78,6 +78,7 @@ async def desc(message: types.Message, state: FSMContext) -> None:
                              caption=data['desc'])
 
     await state.finish()
+    await start_work(message)
 
 
 if __name__ == "__main__":

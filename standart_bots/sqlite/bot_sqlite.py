@@ -5,11 +5,14 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.dispatcher.storage import FSMContext
 
 from config import API_TOKEN
+from sqlite import db_start, edit_profile, create_profile
 
 storage = MemoryStorage()
 bot = Bot(API_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
+async def on_startup(_):
+    await db_start()
 
 class ProfilestatesGroup(StatesGroup):
     photo = State()
@@ -33,6 +36,7 @@ def get_cancel():
 async def start_command(message: types.Message) -> None:
     await message.answer(f'Welcome, {message.from_user.first_name}! Type /create for make profile!',
                          reply_markup=get_kb())
+    await create_profile(user_id=message.from_user.id)
     await message.delete()
 
 
@@ -103,8 +107,11 @@ async def load_description(message: types.Message, state: FSMContext) -> None:
         await bot.send_photo(chat_id=message.from_user.id,
                              photo=data["photo"],
                              caption=f"Name: {data['name']}\nAge: {data['age']}\nDescription: {data['description']}")
+    await edit_profile(state, user_id=message.from_user.id)
     await state.finish()
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp,
+                           on_startup=on_startup,
+                           skip_updates=True)

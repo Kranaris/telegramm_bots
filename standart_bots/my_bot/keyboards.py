@@ -9,4 +9,4 @@ def get_cancel():
     return ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('/cancel'))
 
 def get_profile_data():
-    return ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('/get_profile_data'))
+    return ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('/getprofiledata'))

@@ -22,7 +22,7 @@ class ProfilestatesGroup(StatesGroup):
     name = State()
     age = State()
     description = State()
-    get_profile_data = State()
+    getprofiledata = State()
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message) -> None:
@@ -93,24 +93,20 @@ async def load_age(message: types.Message, state: FSMContext) -> None:
 
 @dp.message_handler(state=ProfilestatesGroup.description)
 async def load_description(message: types.Message, state: FSMContext) -> None:
-    await message.answer("Congratulations! Your profile has been created!")
     async with state.proxy() as data:
         data['description'] = message.text
+    await message.answer("Congratulations! Your profile has been created!\nDo you want to check your profile data?",
+                         reply_markup=get_profile_data())
+    await ProfilestatesGroup.next()
+
+@dp.message_handler(commands=['getprofiledata'], state=ProfilestatesGroup.getprofiledata)
+async def get_date(message: types.Message, state: FSMContext) -> None:
+    await message.answer('This is your profile:', reply_markup=get_cancel())
+    async with state.proxy() as data:
         await bot.send_photo(chat_id=message.from_user.id,
                              photo=data["photo"],
                              caption=f"Name: {data['name']}\nAge: {data['age']}\nDescription: {data['description']}")
     await edit_profile(state, user_id=message.from_user.id)
-    await ProfilestatesGroup.next()
-
-@dp.message_handler(state=ProfilestatesGroup.get_profile_data)
-async def get_profile_data(message: types.Message) -> None:
-    await message.answer("Do you want to check your profile data?",
-                         reply_markup=get_profile_data())
-
-@dp.message_handler(commands=['get_profile_data'])
-async def get_date(message: types.Message, state: FSMContext) -> None:
-    await message.answer('This is your profile:', reply_markup=get_cancel())
-
     await state.finish()
 
 if __name__ == "__main__":

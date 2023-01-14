@@ -2,8 +2,10 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher.storage import FSMContext
+from aiogram.dispatcher.middlewares import BaseMiddleware
+from aiogram.dispatcher.handler import CancelHandler
 
-from config import API_TOKEN
+from config import *
 
 from sqlite import db_start, edit_profile, create_profile
 
@@ -23,6 +25,14 @@ class ProfilestatesGroup(StatesGroup):
     age = State()
     description = State()
     getprofiledata = State()
+
+class CustomMiddleware(BaseMiddleware):
+    async def on_process_message(self,
+                                message: types.Message,
+                                data: dict):
+        if message.from_user.id != ADMIN:
+            print(message.from_user.id)
+            raise CancelHandler()
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message) -> None:
@@ -110,6 +120,7 @@ async def get_date(message: types.Message, state: FSMContext) -> None:
     await state.finish()
 
 if __name__ == "__main__":
+    dp.middleware.setup(CustomMiddleware())
     executor.start_polling(dp,
                            on_startup=on_startup,
                            skip_updates=True)

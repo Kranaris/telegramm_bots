@@ -1,26 +1,23 @@
 import sqlite3 as sq
 
 
-async def db_start():
+async def db_connect():
     global db, cur
 
-    db = sq.connect('bot_sqlite.db')
+    db = sq.connect('my_products.db')
     cur = db.cursor()
 
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS profiles(user_id TEXT PRIMARY KEY, photo TEXT, age TEXT, description TEXT, name TEXT)")
+        "CREATE TABLE IF NOT EXISTS my_products(product_id INTEGER PRIMARY KEY, name TEXT, price, description TEXT)")
 
     db.commit()
 
+async def get_all_products_bd():
 
-async def create_profile(user_id):
-    user = cur.execute("SELECT 1 FROM profiles WHERE user_id == '{key}'".format(key=user_id)).fetchone()
-    if not user:
-        cur.execute("INSERT INTO profiles VALUES(?, ?, ?, ?, ?)", (user_id, '', '', '', ''))
-        db.commit()
+    products = cur.execute("SELECT * FROM my_products").fetchall()
 
-
-async def edit_profile(state, user_id):
+    return products
+async def add_profile(state, user_id):
     async with state.proxy() as data:
         cur.execute(
             "UPDATE profiles SET photo = '{}', age = '{}', description = '{}', name = '{}' WHERE user_id == '{}'".format(

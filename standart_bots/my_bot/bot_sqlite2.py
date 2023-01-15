@@ -5,9 +5,9 @@ from aiogram.dispatcher.storage import FSMContext
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram.dispatcher.handler import CancelHandler
 
-from config import *
+from config import API_TOKEN, ADMIN
 
-from sqlite import db_start, edit_profile, create_profile
+import sqlite
 
 from keyboards import *
 
@@ -16,15 +16,14 @@ bot = Bot(API_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
 async def on_startup(_):
-    await db_start()
-    print("The bot was launched successfully!")
+    await sqlite.db_connect()
+    print("Data base connected successfully")
+    print("The bot has been started successfully!")
 
 class ProfilestatesGroup(StatesGroup):
-    photo = State()
     name = State()
-    age = State()
+    name = State()
     description = State()
-    getprofiledata = State()
 
 class CustomMiddleware(BaseMiddleware):
     async def on_process_message(self,
@@ -36,88 +35,31 @@ class CustomMiddleware(BaseMiddleware):
 
 @dp.message_handler(commands=['start'])
 async def start_command(message: types.Message) -> None:
-    await message.answer(f'Welcome, {message.from_user.first_name}! Type /create for make profile!',
-                         reply_markup=get_kb())
-    await create_profile(user_id=message.from_user.id)
+    await message.answer(f'Welcome, {message.from_user.first_name}!',reply_markup=get_start_kb())
     await message.delete()
 
+@dp.message_handler(commands=['products_management'])
+async def products_management_command(message: types.Message) -> None:
+    await message.answer(f'Products_management menu.',
+                         reply_markup=get_start_ikb())
+    await message.delete()
+
+@dp.callback_query_handler(text='get_all_products')
+async def cb_get_all_products(callback: types.CallbackQuery):
+    products = await sqlite.get_all_products_bd()
+
+    if not products:
+        await callback.answer("You don't have any products!")
+        return await callback.answer()
 
 @dp.message_handler(commands=['cancel'], state="*")
 async def cmd_start(message: types.Message, state: FSMContext) -> None:
     current_state = await state.get_state()
     if current_state is None:
         return
-    await message.reply('Creating was canseled!', reply_markup=get_kb())
+    await message.reply('Add was canceled!', reply_markup=get_start_ikb())
     await state.finish()
 
-
-@dp.message_handler(commands=['create'])
-async def create_command(message: types.Message) -> None:
-    await message.reply("Lets create your profile!\nTo begin with, send me your photo!",
-                        reply_markup=get_cancel())
-    await ProfilestatesGroup.photo.set()
-
-
-@dp.message_handler(lambda message: not message.photo, state=ProfilestatesGroup.photo)
-async def check_photo(message: types.Message) -> None:
-    await message.reply("It's not a photo, try again!")
-
-
-@dp.message_handler(content_types=['photo'], state=ProfilestatesGroup.photo)
-async def load_photo(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data['photo'] = message.photo[0].file_id
-
-    await message.reply("Now print your name")
-    await ProfilestatesGroup.next()
-
-
-@dp.message_handler(lambda message: not 2 < len(message.text) < 100, state=ProfilestatesGroup.name)
-async def check_name(message: types.Message) -> None:
-    await message.reply("It's not a name, try again!")
-
-
-@dp.message_handler(state=ProfilestatesGroup.name)
-async def load_name(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data['name'] = message.text
-
-    await message.reply("Now print your age")
-    await ProfilestatesGroup.next()
-
-
-@dp.message_handler(lambda message: not message.text.isdigit() or not 5 < float(message.text) < 110,
-                    state=ProfilestatesGroup.age)
-async def check_age(message: types.Message) -> None:
-    await message.reply("It's not a age, try again!")
-
-
-@dp.message_handler(state=ProfilestatesGroup.age)
-async def load_age(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data['age'] = message.text
-
-    await message.reply("Now print description")
-    await ProfilestatesGroup.next()
-
-
-@dp.message_handler(state=ProfilestatesGroup.description)
-async def load_description(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data['description'] = message.text
-    await message.answer("Congratulations! Your profile has been created!\nDo you want to check your profile data?",
-                         reply_markup=get_profile_data())
-    await ProfilestatesGroup.next()
-
-@dp.message_handler(commands=['getprofiledata'], state=ProfilestatesGroup.getprofiledata)
-async def get_date(message: types.Message, state: FSMContext) -> None:
-    await message.answer('This is your profile:', reply_markup=get_cancel())
-    async with state.proxy() as data:
-        await bot.send_photo(chat_id=message.from_user.id,
-                             photo=data["photo"],
-                             caption=f"Name: {data['name']}\nAge: {data['age']}\nDescription: {data['description']}")
-    await edit_profile(state, user_id=message.from_user.id)
-    await state.finish()
 
 if __name__ == "__main__":
     dp.middleware.setup(CustomMiddleware())

@@ -8,7 +8,7 @@ async def db_connect():
     cur = db.cursor()
 
     cur.execute(
-        "CREATE TABLE IF NOT EXISTS my_products(title TEXT, description TEXT)")
+        "CREATE TABLE IF NOT EXISTS my_products(photo TEXT, title TEXT, description TEXT)")
 
     db.commit()
 
@@ -21,6 +21,6 @@ async def get_all_products_bd():
 
 async def create_newproduct(state):
     async with state.proxy() as data:
-        new_product = cur.execute("INSERT INTO my_products VALUES (?, ?)", (data['title'], data['description']))
+        new_product = cur.execute("INSERT INTO my_products VALUES (?, ?, ?)", (data['photo'], data['title'], data['description']))
         db.commit()
     return new_product

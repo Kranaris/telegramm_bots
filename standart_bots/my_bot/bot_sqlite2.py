@@ -18,11 +18,19 @@ dp = Dispatcher(bot, storage=storage)
 
 async def on_startup(_):
     await sqlite.db_connect()
-    print("Data base connected successfully")
+    print("Data base connected successfully!")
     print("The bot has been started successfully!")
 
+async def show_all_products(callback: types.CallbackQuery, products: list) -> None:
+    for product in products:
+        await bot.send_photo(chat_id=callback.message.chat.id,
+                             photo=product[0],
+                             caption=f"<b>{product[1]}</b>\n"
+                                     f"<em>{product[2]}</em>",
+                             parse_mode='html')
 
 class Product_statesGroup(StatesGroup):
+    photo = State()
     title = State()
     description = State()
 
@@ -54,7 +62,8 @@ async def products_management_command(message: types.Message) -> None:
 async def cancel_command(message: types.Message, state: FSMContext) -> None:
     if state is None:
         return
-    await message.reply('Add was canceled!', reply_markup=get_start_kb())
+    await message.reply('Add was canceled!',
+                        reply_markup=get_start_kb())
 
     await state.finish()
 
@@ -67,17 +76,35 @@ async def cb_get_all_products(callback: types.CallbackQuery):
         await callback.answer("You don't have any products!")
         return await callback.answer()
 
-    await callback.message.answer(products)
+    await callback.message.delete()
+    await show_all_products(callback, products)
     await callback.answer()
 
 
 @dp.callback_query_handler(text='add_new_product')
 async def cb_add_new_product(callback: types.CallbackQuery):
     await callback.message.delete()
-    await callback.message.answer("Text product's title:",
+    await callback.message.answer("Please, send me product's photo!",
                                   reply_markup=get_cancel())
 
-    await Product_statesGroup.title.set()
+    await Product_statesGroup.photo.set()
+
+@dp.message_handler(lambda message: not message.photo, state=Product_statesGroup.photo)
+async def check_photo(message: types.Message) -> None:
+    await message.reply("It's not a photo, try again!")
+
+@dp.message_handler(content_types=['photo'], state=Product_statesGroup.photo)
+async def load_photo(message: types.Message, state: FSMContext) -> None:
+    async with state.proxy() as data:
+        data['photo'] = message.photo[0].file_id
+
+    await message.reply("Now print title")
+    await Product_statesGroup.next()
+
+
+@dp.message_handler(lambda message: not 2 < len(message.text) < 100, state=Product_statesGroup.title)
+async def check_title(message: types.Message) -> None:
+    await message.reply("It's not a title, try again!")
 
 
 @dp.message_handler(state=Product_statesGroup.title)

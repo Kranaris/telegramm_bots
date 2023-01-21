@@ -28,7 +28,8 @@ async def show_all_products(callback: types.CallbackQuery, products: list) -> No
                              caption=f"Product_id: {product[0]}\n"
                                      f"Title: <b>{product[2]}</b>\n"
                                      f"Description: <em>{product[3]}</em>",
-                             parse_mode='html')
+                             parse_mode='html',
+                             reply_markup=get_start_kb())
 
 class Product_statesGroup(StatesGroup):
     photo = State()

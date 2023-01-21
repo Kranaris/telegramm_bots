@@ -72,7 +72,7 @@ async def cancel_command(message: types.Message, state: FSMContext) -> None:
 
 
 @dp.callback_query_handler(text='get_all_products')
-async def cb_get_all_products(callback: types.CallbackQuery):
+async def cb_get_all_products(callback: types.CallbackQuery) -> None:
     products = await sqlite.get_all_products_bd()
 
     if not products:
@@ -85,7 +85,7 @@ async def cb_get_all_products(callback: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text='add_new_product')
-async def cb_add_new_product(callback: types.CallbackQuery):
+async def cb_add_new_product(callback: types.CallbackQuery) -> None:
     await callback.message.delete()
     await callback.message.answer("Please, send me product's photo!",
                                   reply_markup=get_cancel())
@@ -150,7 +150,7 @@ async def cb_edit_product(callback: types.CallbackQuery, callback_data: dict, st
     await callback.answer()
 
 @dp.message_handler(state=Product_statesGroup.edit_title)
-async def load_new_title(message: types.Message, state: FSMContext):
+async def load_new_title(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         await sqlite.edit_product(data['product_id'], message.text)
 

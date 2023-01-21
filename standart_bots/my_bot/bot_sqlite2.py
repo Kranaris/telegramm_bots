@@ -24,9 +24,10 @@ async def on_startup(_):
 async def show_all_products(callback: types.CallbackQuery, products: list) -> None:
     for product in products:
         await bot.send_photo(chat_id=callback.message.chat.id,
-                             photo=product[0],
-                             caption=f"<b>{product[1]}</b>\n"
-                                     f"<em>{product[2]}</em>",
+                             photo=product[1],
+                             caption=f"Product_id: {product[0]}\n"
+                                     f"Title: <b>{product[2]}</b>\n"
+                                     f"Description: <em>{product[3]}</em>",
                              parse_mode='html')
 
 class Product_statesGroup(StatesGroup):
@@ -102,11 +103,6 @@ async def load_photo(message: types.Message, state: FSMContext) -> None:
     await Product_statesGroup.next()
 
 
-@dp.message_handler(lambda message: not 2 < len(message.text) < 100, state=Product_statesGroup.title)
-async def check_title(message: types.Message) -> None:
-    await message.reply("It's not a title, try again!")
-
-
 @dp.message_handler(state=Product_statesGroup.title)
 async def handle_title(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
@@ -120,7 +116,7 @@ async def handle_title(message: types.Message, state: FSMContext) -> None:
 async def handle_title(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data['description'] = message.text
-    await sqlite.create_newproduct(state)
+    await sqlite.create_new_product(state)
     await message.reply("The product has been added!",
                         reply_markup=get_start_ikb())
 

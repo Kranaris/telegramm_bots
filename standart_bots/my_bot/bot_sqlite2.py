@@ -29,12 +29,13 @@ async def show_all_products(callback: types.CallbackQuery, products: list) -> No
                                      f"Title: <b>{product[2]}</b>\n"
                                      f"Description: <em>{product[3]}</em>",
                              parse_mode='html',
-                             reply_markup=get_start_kb())
+                             reply_markup=get_edit_ikb(product[0]))
 
 class Product_statesGroup(StatesGroup):
     photo = State()
     title = State()
     description = State()
+    edit_title = State()
 
 
 class CustomMiddleware(BaseMiddleware):
@@ -119,8 +120,7 @@ async def handle_title(message: types.Message, state: FSMContext) -> None:
         data['description'] = message.text
     await sqlite.create_new_product(state)
     await message.reply("The product has been added!",
-                        reply_markup=get_start_ikb())
-
+                        reply_markup=get_start_kb())
     await state.finish()
 
 
@@ -132,6 +132,31 @@ async def cancel_command(message: types.Message, state: FSMContext) -> None:
 
     await state.finish()
 
+@dp.callback_query_handler(products_cb.filter(action="delete"))
+async def cb_delete_product(callback: types.CallbackQuery, callback_data: dict) -> None:
+    await sqlite.delete_product(callback_data['id'])
+
+    await callback.message.reply("The product has been deleted!")
+    await callback.answer()
+
+@dp.callback_query_handler(products_cb.filter(action="edit"))
+async def cb_edit_product(callback: types.CallbackQuery, callback_data: dict, state: FSMContext) -> None:
+    await  callback.message.answer("Text new title:",
+                                   reply_markup=get_cancel())
+    await Product_statesGroup.edit_title.set()
+    async with state.proxy() as data:
+        data['product_id'] = callback_data['id']
+
+    await callback.answer()
+
+@dp.message_handler(state=Product_statesGroup.edit_title)
+async def load_new_title(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        await sqlite.edit_product(data['product_id'], message.text)
+
+    await message.reply("The new product title is set!",
+                        reply_markup=get_start_kb())
+    await state.finish()
 
 if __name__ == "__main__":
     dp.middleware.setup(CustomMiddleware())

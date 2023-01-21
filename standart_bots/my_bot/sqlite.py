@@ -27,3 +27,13 @@ async def create_new_product(state):
                                    data['description']))
         db.commit()
     return new_product
+
+
+
+async def delete_product(product_id: int) -> None:
+    cur.execute("DELETE FROM my_products WHERE product_id = ?", (product_id,))
+    db.commit()
+
+async def edit_product(product_id: int, title: str) -> None:
+    cur.execute("UPDATE my_products SET title = ? WHERE product_id = ?", (title, product_id,))
+    db.commit()
